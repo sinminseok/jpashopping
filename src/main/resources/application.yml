@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   datasource:
     url: jdbc:h2:tcp://localhost/~/jpashop
@@ -5,10 +8,14 @@ spring:
     password: sa
     driver-class-name: org.h2.Driver
 
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+
 
   jpa:
     hibernate:
-      ddl-auto: create
+#      ddl-auto: create
     properties:
       hibernate:
         #show-sql:true
