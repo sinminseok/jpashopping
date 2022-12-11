@@ -1,61 +1,62 @@
 package jpabook.jpashop.controller;
 
 
-import jpabook.jpashop.domain.Member.Member;
-import jpabook.jpashop.domain.Value.Address;
-import jpabook.jpashop.service.MemberService;
-import jpabook.jpashop.web.MemberForm;
+import jpabook.jpashop.dto.MemberDto;
+import jpabook.jpashop.entity.Member;
+import jpabook.jpashop.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.bind.BindResult;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
-import java.util.List;
+import javax.annotation.PostConstruct;
+
 
 @Slf4j
-@Controller
+@RestController
 @RequiredArgsConstructor
 public class MemberController {
 
+    private final MemberRepository memberRepository;
 
-    private final MemberService memberService;
-
-    @GetMapping(value = "/members/new")
-    public String createForm(Model model){
-        model.addAttribute("memberForm",new MemberForm());
-        return "members/createMemberForm";
+    @GetMapping("/members/{id}")
+    public String findMember(@PathVariable("id") Long id){
+        Member member = memberRepository.findById(id).get();
+        log.info("member = {} ",member);
+        return member.getUsername();
     }
 
-    @PostMapping(value = "/members/new")
-    public String create(@Valid MemberForm form, BindingResult result){
-        if(result.hasErrors()){
-            return "members/createMemberForm";
+    //도메인 클래스 컨버터로 엔티티를 파라미터로 받으면 이 엔티티는 단순 조회용으로만 사용하자.(트랜잭션이 없다)
+    @GetMapping("/members2/{id}")
+    public String findMember2(@PathVariable("id") Member member){
+        return member.getUsername();
+    }
+
+    @GetMapping("/members")
+    public Page<Member> list(Pageable pageable){
+        Page<Member> page = memberRepository.findAll(pageable);
+        return page;
+    }
+
+    //Page내용을 DTO로 변경
+    @GetMapping("/members2")
+    public Page<MemberDto> list2(Pageable pageable){
+        Page<Member> page = memberRepository.findAll(pageable);
+        Page<MemberDto> pageDto = page.map(MemberDto::new);
+        return pageDto;
+    }
+
+    @PostConstruct
+    public void init(){
+        for(int i=0;i<100;i++){
+            memberRepository.save(new Member("user"+i,i));
         }
 
-        Address address = new Address(form.getCity(),form.getStreet(),form.getZipcode());
-        Member member = new Member();
-        member.setName(form.getName());
-        member.setAddress(address);
-        log.info("member name = {} ",member.getName());
-
-
-
-        memberService.join(member);
-
-        return "redirect:/";
     }
 
-    @GetMapping(value = "/members")
-    public String list(Model model){
-        List<Member> members = memberService.findMembers();
-        model.addAttribute("members",members);
 
-        return "members/memberList";
-    }
 
 }
